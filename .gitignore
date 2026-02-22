@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+.pnp.*
+
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# Environment
+.env
+.env*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Turbo
+.turbo/
+
+# Database
+*.db
+*.sqlite
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+lerna-debug.log*

@@ -26,6 +26,7 @@
     "react-dom": "^18.2.0",
     "recharts": "^2.10.3",
     "resend": "^3.0.0",
+    "stripe": "^14.14.0",
     "tailwind-merge": "^2.2.0",
     "zod": "^3.22.4"
   },

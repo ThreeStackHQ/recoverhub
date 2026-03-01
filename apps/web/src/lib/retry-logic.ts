@@ -23,7 +23,6 @@ import {
   db,
   failedPayments,
   retryAttempts,
-  stripeConnections,
 } from "@recoverhub/db";
 import { eq, and, lte } from "drizzle-orm";
 import { decrypt } from "./encrypt";

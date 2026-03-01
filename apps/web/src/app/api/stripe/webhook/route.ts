@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 /**
  * POST /api/stripe/webhook
  *
@@ -377,14 +379,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         case "invoice.payment_failed": {
           await handlePaymentFailed(
             connectedAccountId,
-            event.data.object as StripeInvoice
+            (event.data.object as unknown) as StripeInvoice
           );
           break;
         }
         case "invoice.payment_succeeded": {
           await handlePaymentSucceeded(
             connectedAccountId,
-            event.data.object as StripeInvoice
+            (event.data.object as unknown) as StripeInvoice
           );
           break;
         }
@@ -398,18 +400,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         case "customer.subscription.created":
         case "customer.subscription.updated": {
           await handlePlatformSubscriptionUpsert(
-            event.data.object as StripeSubscription
+            (event.data.object as unknown) as StripeSubscription
           );
           break;
         }
         case "customer.subscription.deleted": {
           await handlePlatformSubscriptionDeleted(
-            event.data.object as StripeSubscription
+            (event.data.object as unknown) as StripeSubscription
           );
           break;
         }
         case "invoice.payment_failed": {
-          const inv = event.data.object as StripeInvoice;
+          const inv = (event.data.object as unknown) as StripeInvoice;
           await db
             .update(subscriptions)
             .set({ status: "past_due", updatedAt: new Date() })
@@ -417,7 +419,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           break;
         }
         case "invoice.payment_succeeded": {
-          const inv = event.data.object as StripeInvoice;
+          const inv = (event.data.object as unknown) as StripeInvoice;
           await db
             .update(subscriptions)
             .set({ status: "active", updatedAt: new Date() })
@@ -440,6 +442,4 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   return NextResponse.json({ received: true });
 }
 
-export const config = {
-  api: { bodyParser: false },
-};
+// Raw body is read via req.arrayBuffer() — no config needed in App Router

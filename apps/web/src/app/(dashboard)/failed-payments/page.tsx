@@ -78,8 +78,23 @@ export default function FailedPaymentsPage() {
 
   async function handleRetry(id: string) {
     setActionLoading(id + '-retry')
-    await new Promise(r => setTimeout(r, 1200))
-    setActionLoading(null)
+    try {
+      const res = await fetch(`/api/failed-payments/${id}/retry`, {
+        method: 'POST',
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        console.error('[retry]', data.error ?? 'Unknown error')
+        // TODO: show toast notification
+      } else {
+        console.log('[retry] ✅ Queued:', data)
+        // TODO: show success toast + refresh data
+      }
+    } catch (err) {
+      console.error('[retry] Network error:', err)
+    } finally {
+      setActionLoading(null)
+    }
   }
 
   async function handleEmail(id: string) {

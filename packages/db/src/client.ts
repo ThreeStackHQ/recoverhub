@@ -2,19 +2,33 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from './schema';
 
-// Validate required env var
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error('DATABASE_URL environment variable is required');
+// Lazy-initialize the database connection to avoid build-time errors.
+// The actual connection is created on first use.
+let _db: ReturnType<typeof drizzle<typeof schema>> | null = null;
+let _sql: ReturnType<typeof postgres> | null = null;
+
+function getConnection() {
+  if (_db) return { db: _db, sql: _sql! };
+
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error('DATABASE_URL environment variable is required');
+  }
+
+  _sql = postgres(connectionString, { max: 10 });
+  _db = drizzle(_sql, { schema });
+  return { db: _db, sql: _sql };
 }
 
-// Create postgres connection
-// - max: 10 connections for API server
-// - For migrations (drizzle-kit), use max: 1
-const sql = postgres(connectionString, { max: 10 });
+// Proxy that lazily initializes on first method access
+export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
+  get(_target, prop) {
+    return getConnection().db[prop as keyof typeof _db];
+  },
+});
 
-// Create Drizzle instance with full schema (enables relational queries)
-export const db = drizzle(sql, { schema });
-
-// Export the raw sql client for advanced use cases
-export { sql };
+export const sql = new Proxy({} as ReturnType<typeof postgres>, {
+  get(_target, prop) {
+    return getConnection().sql[prop as keyof typeof _sql];
+  },
+});

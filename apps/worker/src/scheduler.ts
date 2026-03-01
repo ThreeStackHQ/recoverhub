@@ -8,16 +8,20 @@
  * Existing repeatable jobs with the same key are replaced, not duplicated.
  */
 
-import { retryQueue } from "./queue";
-import type { BatchScanJobData } from "./queue";
+import { retryQueue, dunningQueue } from "./queue";
+import type { BatchScanJobData, DunningScanJobData } from "./queue";
 
 // ─── Schedule Constants ───────────────────────────────────────────────────────
 
 /** How often to scan for due retries (every 6 hours). */
 const SCAN_INTERVAL_MS = 6 * 60 * 60 * 1_000; // 6 hours
 
+/** How often to scan for due dunning emails (every hour). */
+const DUNNING_SCAN_INTERVAL_MS = 60 * 60 * 1_000; // 1 hour
+
 /** Repeatable job key for idempotency. */
 const BATCH_SCAN_JOB_KEY = "recoverhub:batch-scan";
+const DUNNING_SCAN_JOB_KEY = "recoverhub:dunning-scan";
 
 // ─── Scheduler ────────────────────────────────────────────────────────────────
 
@@ -50,21 +54,53 @@ export async function upsertScheduledJobs(): Promise<void> {
     { jobId: `${BATCH_SCAN_JOB_KEY}:startup` }
   );
 
-  console.log(`[scheduler] ✅ Queued immediate startup scan`);
+  console.log(`[scheduler] ✅ Queued immediate startup retry scan`);
+
+  // ─── Dunning Email Scan (every hour) ─────────────────────────────────────
+  const dunningJobData: DunningScanJobData = {
+    triggeredAt: new Date().toISOString(),
+    batchSize: 50,
+  };
+
+  await dunningQueue.add("dunning-scan", dunningJobData, {
+    repeat: {
+      every: DUNNING_SCAN_INTERVAL_MS,
+    },
+    jobId: DUNNING_SCAN_JOB_KEY,
+  });
+
+  console.log(
+    `[scheduler] ✅ Registered dunning-scan repeating job (every 1 hour)`
+  );
+
+  // Also run dunning scan immediately on startup
+  await dunningQueue.add(
+    "dunning-scan",
+    { triggeredAt: new Date().toISOString(), batchSize: 50 },
+    { jobId: `${DUNNING_SCAN_JOB_KEY}:startup` }
+  );
+
+  console.log(`[scheduler] ✅ Queued immediate startup dunning scan`);
 }
 
 /**
- * Lists all currently registered repeating jobs (for debugging).
+ * Lists all currently registered repeating jobs for all queues (for debugging).
  */
 export async function listScheduledJobs(): Promise<void> {
-  const repeatableJobs = await retryQueue.getRepeatableJobs();
-  if (repeatableJobs.length === 0) {
+  const retryJobs = await retryQueue.getRepeatableJobs();
+  const dunningJobs = await dunningQueue.getRepeatableJobs();
+  const allJobs = [
+    ...retryJobs.map((j) => ({ ...j, queue: "retry-queue" })),
+    ...dunningJobs.map((j) => ({ ...j, queue: "dunning-queue" })),
+  ];
+
+  if (allJobs.length === 0) {
     console.log("[scheduler] No repeating jobs registered");
     return;
   }
-  console.log(`[scheduler] Repeating jobs (${repeatableJobs.length}):`);
-  for (const job of repeatableJobs) {
+  console.log(`[scheduler] Repeating jobs (${allJobs.length}):`);
+  for (const job of allJobs) {
     const next = job.next ? new Date(job.next).toISOString() : "N/A";
-    console.log(`  - ${job.name} | every ${job.every}ms | next: ${next}`);
+    console.log(`  - [${job.queue}] ${job.name} | every ${job.every}ms | next: ${next}`);
   }
 }

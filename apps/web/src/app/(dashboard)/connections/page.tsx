@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Link2, Zap, CheckCircle2, AlertCircle, ExternalLink, Trash2, RefreshCw, ShieldCheck, Key, Globe, Building2 } from 'lucide-react'
+import { Link2, CheckCircle2, AlertCircle, ExternalLink, Trash2, RefreshCw, ShieldCheck, Key, Globe, Building2 } from 'lucide-react'
 
 // Sprint 1.7 — Stripe Connection UI — Wren
 

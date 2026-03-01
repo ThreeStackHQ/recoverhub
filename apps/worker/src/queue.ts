@@ -37,6 +37,7 @@ export const connection = redisConnection as unknown as ConnectionOptions;
 // ─── Queue Names ──────────────────────────────────────────────────────────────
 
 export const RETRY_QUEUE_NAME = "retry-queue";
+export const DUNNING_QUEUE_NAME = "dunning-queue";
 
 // ─── Queue Definitions ────────────────────────────────────────────────────────
 
@@ -48,6 +49,20 @@ export const retryQueue = new Queue(RETRY_QUEUE_NAME, {
     backoff: {
       type: "exponential",
       delay: 5_000, // 5s base, 10s, 20s
+    },
+    removeOnComplete: { count: 100 },
+    removeOnFail: { count: 50 },
+  },
+});
+
+/** The dunning email queue — schedules + sends dunning emails. */
+export const dunningQueue = new Queue(DUNNING_QUEUE_NAME, {
+  connection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: {
+      type: "exponential",
+      delay: 10_000, // 10s base
     },
     removeOnComplete: { count: 100 },
     removeOnFail: { count: 50 },
@@ -66,5 +81,18 @@ export interface RetryJobData {
 /** Payload for the batch-scan job (finds + enqueues due retries). */
 export interface BatchScanJobData {
   triggeredAt: string; // ISO timestamp
+  batchSize?: number;
+}
+
+/** Payload for a single dunning email job. */
+export interface DunningEmailJobData {
+  failedPaymentId: string;
+  templateId: string;
+  sequenceOrder: number;
+}
+
+/** Payload for the dunning scan job (finds + enqueues due dunning emails). */
+export interface DunningScanJobData {
+  triggeredAt: string;
   batchSize?: number;
 }

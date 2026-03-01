@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { AlertCircle, Search, RefreshCw, Mail, ChevronDown, ChevronLeft, ChevronRight, Clock, XCircle, CheckCircle2, Loader2, Filter } from 'lucide-react'
+import { AlertCircle, Search, RefreshCw, Mail, ChevronDown, ChevronLeft, ChevronRight, Clock, XCircle, CheckCircle2, Loader2 } from 'lucide-react'
 
 // Sprint 1.11 — Failed Payments Dashboard — Wren
 
